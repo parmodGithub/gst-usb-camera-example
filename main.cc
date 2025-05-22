@@ -15,7 +15,7 @@
  *
  * Usage:
  * Live Camera Preview on Display:
- * gst-usb-camera-app 0 --width=640 --height=480 -f 30
+ * gst-usb-camera-app 0 -w 640 -h 480 -f 30 -F YUY2
  *
  * Help:
  * gst-usb-camera-app --help
@@ -36,13 +36,15 @@
 #define DEFAULT_WIDTH 640
 #define DEFAULT_HEIGHT 480
 #define DEFAULT_FRAMERATE 30
+#define YUY2 "YUY2"
+#define DEFAULT_FORMAT YUY2
 #define MAX_VID_DEV_CNT 64
 
 #define GST_APP_SUMMARY                                                       \
   "This app enables users to use a single USB camera for video preview.\n"    \
   "\nCommand:\n"                                                              \
   "For Preview on Display:\n"                                                 \
-  "  gst-usb-camera-app 0 -w 640 -h 480 -f 30\n"                    \
+  "  gst-usb-camera-app 0 -w 640 -h 480 -f 30 -F YUY2\n"                    \
   "\nOutput:\n"                                                               \
   "  Upon execution, the application will display the video output.\n"
 
@@ -55,6 +57,7 @@ struct GstCameraAppCtx {
   gint width;
   gint height;
   gint framerate;
+  const gchar *format;
 };
 typedef struct GstCameraAppCtx GstCameraAppContext;
 
@@ -207,6 +210,7 @@ gst_app_context_new ()
   ctx->width = DEFAULT_WIDTH;
   ctx->height = DEFAULT_HEIGHT;
   ctx->framerate = DEFAULT_FRAMERATE;
+  ctx->format = DEFAULT_FORMAT;
   return ctx;
 }
 
@@ -224,6 +228,9 @@ gst_app_context_free (GstCameraAppContext * appctx)
     g_main_loop_unref (appctx->mloop);
     appctx->mloop = NULL;
   }
+
+//  g_free (appctx->ip_address);
+//  g_free (appctx->port_num);
 
   if (appctx->pipeline != NULL) {
     gst_object_unref (appctx->pipeline);
@@ -335,7 +342,7 @@ create_pipe (GstCameraAppContext * appctx)
 
   // Set the source elements capability and in case YUV dump disable UBWC
   filtercaps = gst_caps_new_simple ("video/x-raw",
-      "format", G_TYPE_STRING, "YUY2",
+      "format", G_TYPE_STRING, appctx->format,
       "width", G_TYPE_INT, appctx->width,
       "height", G_TYPE_INT, appctx->height,
       "framerate", GST_TYPE_FRACTION, appctx->framerate, 1,
@@ -392,6 +399,8 @@ main (gint argc, gchar *argv[])
       "camera height" },
     { "framerate", 'f', 0, G_OPTION_ARG_INT, &appctx->framerate, "framerate",
       "camera framerate" },
+    { "format", 'F', 0, G_OPTION_ARG_STRING, &appctx->format, "Format", 
+      "Video format (e.g., NV12, YUY2)" },
     { NULL }
     };
 
